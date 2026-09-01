@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, UploadCloud, CheckCircle, Camera, AlertCircle } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { X, UploadCloud, CheckCircle, Camera, AlertCircle, FileCheck, RefreshCw, Calendar, Tag, DollarSign } from 'lucide-react';
 import { ModalType, Transaction, ExpenseCategory } from '../types';
 
 interface ExpenseModalProps {
@@ -24,11 +24,14 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState<ExpenseCategory>('Shopping');
   const [note, setNote] = useState('');
+  const [date, setDate] = useState('Today');
 
   // Upload State
   const [dragActive, setDragActive] = useState(false);
-  const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
-  const [isScanning, setIsScanning] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!type && !selectedTransaction) return null;
 
@@ -47,7 +50,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
     onAddTransaction({
       merchant: merchant.trim(),
       amount: parsedAmount,
-      date: 'Today',
+      date: date || 'Today',
       category: category,
       status: 'verified',
       note: note.trim() || undefined,
@@ -58,46 +61,69 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
     setAmount('');
     setNote('');
     onClose();
-    onShowToast(`Saved ₹${parsedAmount} for ${merchant}!`);
+  };
+
+  const handleFileChange = (file: File) => {
+    setSelectedFile(file);
+    if (file.type.startsWith('image/')) {
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+    } else {
+      setPreviewUrl(null);
+    }
   };
 
   const handleSimulateScan = () => {
-    setIsScanning(true);
-    onShowToast('🔍 AI analyzing receipt details...');
+    setIsProcessing(true);
+    onShowToast('Analyzing receipt with OCR...');
     setTimeout(() => {
-      setIsScanning(false);
-      const randomMerchants = ['Swiggy Gourmet', 'Reliance Fresh', 'Uber Ride', 'Blinkit', 'Zomato'];
-      const pickedMerchant = randomMerchants[Math.floor(Math.random() * randomMerchants.length)];
-      const randomAmount = Math.floor(Math.random() * 850) + 150;
+      setIsProcessing(false);
+      const randomMerchants = [
+        { name: 'Swiggy Instamart', cat: 'Groceries' as ExpenseCategory, amt: 549 },
+        { name: 'Reliance Digital', cat: 'Shopping' as ExpenseCategory, amt: 3499 },
+        { name: 'Uber Premier', cat: 'Travel' as ExpenseCategory, amt: 380 },
+        { name: 'Blinkit Delivery', cat: 'Groceries' as ExpenseCategory, amt: 290 },
+        { name: 'Cult.Fit Gym', cat: 'Health' as ExpenseCategory, amt: 1800 }
+      ];
+      const picked = randomMerchants[Math.floor(Math.random() * randomMerchants.length)];
       
       onAddTransaction({
-        merchant: pickedMerchant,
-        amount: randomAmount,
+        merchant: picked.name,
+        amount: picked.amt,
         date: 'Today',
-        category: 'Dining',
+        category: picked.cat,
         status: 'matched',
         hasAttachment: true
       });
       onClose();
-      onShowToast(`⚡ Bill scanned! ₹${randomAmount} from ${pickedMerchant} matched with UPI`);
+      onShowToast(`Extracted ₹${picked.amt} for ${picked.name}`);
     }, 1200);
   };
 
-  const handleSimulateUpload = () => {
-    const fileName = selectedFileName || 'GPay_UPI_Transaction_Screenshot.png';
-    onShowToast(`Processing ${fileName}...`);
+  const handleProcessUploadedFile = () => {
+    if (!selectedFile) {
+      if (fileInputRef.current) fileInputRef.current.click();
+      return;
+    }
+
+    setIsProcessing(true);
+    onShowToast(`Scanning ${selectedFile.name}...`);
     setTimeout(() => {
+      setIsProcessing(false);
+      const detectedAmount = Math.floor(Math.random() * 1200) + 250;
       onAddTransaction({
-        merchant: 'Flipkart Online',
-        amount: 899,
+        merchant: selectedFile.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ') || 'Uploaded Receipt',
+        amount: detectedAmount,
         date: 'Today',
         category: 'Shopping',
         status: 'matched',
-        hasAttachment: true
+        hasAttachment: true,
+        attachmentName: selectedFile.name
       });
-      setSelectedFileName(null);
+      setSelectedFile(null);
+      setPreviewUrl(null);
       onClose();
-      onShowToast('📄 UPI screenshot imported & matched to Flipkart order!');
+      onShowToast(`Invoice verified: ₹${detectedAmount}`);
     }, 1000);
   };
 
@@ -114,32 +140,65 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '20px' }}>
             <div style={{ padding: '16px', background: '#F8FAFC', borderRadius: '14px', border: '1px solid #E2E8F0' }}>
               <div style={{ fontSize: '13px', color: '#64748B' }}>Merchant</div>
-              <div style={{ fontSize: '18px', fontWeight: 800, color: '#0F172A', marginTop: '2px' }}>{selectedTransaction.merchant}</div>
+              <div style={{ fontSize: '18px', fontWeight: 800, color: '#0F172A', marginTop: '2px' }}>
+                {selectedTransaction.merchant}
+              </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px' }}>
                 <div>
                   <div style={{ fontSize: '12px', color: '#64748B' }}>Amount</div>
-                  <div style={{ fontSize: '16px', fontWeight: 700, color: '#0F172A' }}>₹{selectedTransaction.amount.toLocaleString('en-IN')}</div>
+                  <div style={{ fontSize: '16px', fontWeight: 700, color: '#0F172A' }}>
+                    ₹{selectedTransaction.amount.toLocaleString('en-IN')}
+                  </div>
                 </div>
                 <div>
                   <div style={{ fontSize: '12px', color: '#64748B' }}>Category</div>
-                  <div style={{ fontSize: '14px', fontWeight: 600, color: '#4F46E5' }}>{selectedTransaction.category}</div>
+                  <div style={{ fontSize: '14px', fontWeight: 600, color: '#4F46E5' }}>
+                    {selectedTransaction.category}
+                  </div>
                 </div>
                 <div>
                   <div style={{ fontSize: '12px', color: '#64748B' }}>Date</div>
-                  <div style={{ fontSize: '14px', fontWeight: 600, color: '#0F172A' }}>{selectedTransaction.date}</div>
+                  <div style={{ fontSize: '14px', fontWeight: 600, color: '#0F172A' }}>
+                    {selectedTransaction.date}
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div style={{ padding: '12px 14px', borderRadius: '12px', background: selectedTransaction.status === 'matched' ? '#ECFDF5' : selectedTransaction.status === 'needs-bill' ? '#FFFBEB' : '#EEF2FF', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div
+              style={{
+                padding: '12px 14px',
+                borderRadius: '12px',
+                background:
+                  selectedTransaction.status === 'matched'
+                    ? '#ECFDF5'
+                    : selectedTransaction.status === 'needs-bill'
+                    ? '#FFFBEB'
+                    : '#EEF2FF',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
               {selectedTransaction.status === 'matched' ? (
                 <CheckCircle size={18} color="#059669" />
               ) : (
                 <AlertCircle size={18} color={selectedTransaction.status === 'needs-bill' ? '#D97706' : '#4F46E5'} />
               )}
-              <div style={{ fontSize: '13px', fontWeight: 600, color: selectedTransaction.status === 'matched' ? '#059669' : selectedTransaction.status === 'needs-bill' ? '#B45309' : '#4338CA' }}>
+              <div
+                style={{
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  color:
+                    selectedTransaction.status === 'matched'
+                      ? '#059669'
+                      : selectedTransaction.status === 'needs-bill'
+                      ? '#B45309'
+                      : '#4338CA'
+                }}
+              >
                 {selectedTransaction.status === 'matched'
-                  ? 'Bill & UPI payment proof 100% matched.'
+                  ? 'Bill & payment proof 100% matched.'
                   : selectedTransaction.status === 'needs-bill'
                   ? 'Missing invoice or receipt attachment.'
                   : 'Receipt saved & verified.'}
@@ -154,10 +213,11 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
               onClick={() => {
                 onUpdateTransactionStatus(selectedTransaction.id, 'matched');
                 onClose();
-                onShowToast(`Attached invoice to ${selectedTransaction.merchant}!`);
               }}
             >
-              <span className="action-title" style={{ fontSize: '15px' }}>📎 Attach Bill / Invoice</span>
+              <span className="action-title" style={{ fontSize: '15px' }}>
+                📎 Attach Bill & Mark Matched
+              </span>
             </button>
           ) : (
             <button
@@ -181,11 +241,12 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
               <X size={16} />
             </button>
           </div>
-          <div className="scanner-viewfinder">
+          <div className="scanner-viewfinder" style={{ position: 'relative', overflow: 'hidden' }}>
             <div className="scanner-laser"></div>
-            <div className="scanner-frame-corners">
-              <span style={{ fontSize: '13px', color: '#CBD5E1', textAlign: 'center', padding: '10px' }}>
-                {isScanning ? 'Extracting details...' : 'Align bill or payment screenshot'}
+            <div className="scanner-frame-corners" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+              <Camera size={36} color="rgba(255,255,255,0.7)" style={{ marginBottom: '8px' }} />
+              <span style={{ fontSize: '13px', color: '#E2E8F0', textAlign: 'center', padding: '0 20px' }}>
+                {isProcessing ? 'Extracting merchant & total...' : 'Position receipt or screenshot in frame'}
               </span>
             </div>
           </div>
@@ -193,10 +254,16 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
             className="action-pill-btn primary"
             style={{ width: '100%', padding: '16px' }}
             onClick={handleSimulateScan}
-            disabled={isScanning}
+            disabled={isProcessing}
           >
-            <span className="action-title" style={{ fontSize: '15px' }}>
-              {isScanning ? '⏳ Extracting...' : '📸 Snap & Auto-Extract Details'}
+            <span className="action-title" style={{ fontSize: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+              {isProcessing ? (
+                <>
+                  <RefreshCw size={18} className="animate-spin" /> Extracting details...
+                </>
+              ) : (
+                '📸 Snap & Auto-Extract Receipt'
+              )}
             </span>
           </button>
         </div>
@@ -216,52 +283,87 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
             style={{
               border: `2px dashed ${dragActive ? '#4F46E5' : '#CBD5E1'}`,
               borderRadius: '16px',
-              padding: '36px 20px',
+              padding: previewUrl ? '16px' : '36px 20px',
               textAlign: 'center',
               marginBottom: '20px',
               background: dragActive ? '#EEF2FF' : '#F8FAFC',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
             }}
-            onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragActive(true);
+            }}
             onDragLeave={() => setDragActive(false)}
             onDrop={(e) => {
               e.preventDefault();
               setDragActive(false);
               if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-                setSelectedFileName(e.dataTransfer.files[0].name);
+                handleFileChange(e.dataTransfer.files[0]);
               }
             }}
             onClick={() => {
-              const fileInput = document.getElementById('receipt-file-input') as HTMLInputElement;
-              if (fileInput) fileInput.click();
+              if (fileInputRef.current) fileInputRef.current.click();
             }}
           >
             <input
               type="file"
-              id="receipt-file-input"
+              ref={fileInputRef}
               style={{ display: 'none' }}
               accept="image/*,.pdf"
               onChange={(e) => {
                 if (e.target.files && e.target.files[0]) {
-                  setSelectedFileName(e.target.files[0].name);
+                  handleFileChange(e.target.files[0]);
                 }
               }}
             />
-            <UploadCloud size={38} color="#4F46E5" strokeWidth={2} style={{ margin: '0 auto 12px' }} />
-            <div style={{ fontSize: '15px', fontWeight: 700, color: '#0F172A' }}>
-              {selectedFileName ? selectedFileName : 'Drop files here or browse'}
-            </div>
-            <div style={{ fontSize: '13px', color: '#64748B', marginTop: '6px' }}>
-              PDF, PNG, JPG from PhonePe, GPay, Paytm
-            </div>
+
+            {previewUrl ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                <img
+                  src={previewUrl}
+                  alt="Receipt Preview"
+                  style={{ maxHeight: '140px', borderRadius: '8px', objectFit: 'contain' }}
+                />
+                <div style={{ fontSize: '13px', fontWeight: 600, color: '#0F172A' }}>
+                  {selectedFile?.name}
+                </div>
+              </div>
+            ) : selectedFile ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                <FileCheck size={36} color="#10B981" />
+                <div style={{ fontSize: '14px', fontWeight: 700, color: '#0F172A' }}>
+                  {selectedFile.name}
+                </div>
+              </div>
+            ) : (
+              <>
+                <UploadCloud size={38} color="#4F46E5" strokeWidth={2} style={{ margin: '0 auto 12px' }} />
+                <div style={{ fontSize: '15px', fontWeight: 700, color: '#0F172A' }}>
+                  Drop files here or click to browse
+                </div>
+                <div style={{ fontSize: '13px', color: '#64748B', marginTop: '6px' }}>
+                  PDF, PNG, JPG from PhonePe, GPay, Paytm, or paper bills
+                </div>
+              </>
+            )}
           </div>
           <button
             className="action-pill-btn primary"
             style={{ width: '100%', padding: '16px' }}
-            onClick={handleSimulateUpload}
+            onClick={handleProcessUploadedFile}
+            disabled={isProcessing}
           >
-            <span className="action-title" style={{ fontSize: '15px' }}>
-              {selectedFileName ? 'Import & Verify Selected File' : 'Choose from Gallery / Files'}
+            <span className="action-title" style={{ fontSize: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+              {isProcessing ? (
+                <>
+                  <RefreshCw size={18} className="animate-spin" /> Processing Invoice...
+                </>
+              ) : selectedFile ? (
+                'Import & Extract Selected File'
+              ) : (
+                'Browse from Gallery / Files'
+              )}
             </span>
           </button>
         </div>
@@ -292,7 +394,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                   width: '100%',
                   padding: '13px',
                   borderRadius: '12px',
-                  border: '1px solid #CBD5E1',
+                  border: '1.5px solid #CBD5E1',
                   fontFamily: 'inherit',
                   fontSize: '14px',
                   marginTop: '6px',
@@ -316,7 +418,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                     width: '100%',
                     padding: '13px',
                     borderRadius: '12px',
-                    border: '1px solid #CBD5E1',
+                    border: '1.5px solid #CBD5E1',
                     fontFamily: 'inherit',
                     fontSize: '14px',
                     marginTop: '6px',
@@ -335,7 +437,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                     width: '100%',
                     padding: '13px',
                     borderRadius: '12px',
-                    border: '1px solid #CBD5E1',
+                    border: '1.5px solid #CBD5E1',
                     fontFamily: 'inherit',
                     fontSize: '14px',
                     marginTop: '6px',
@@ -353,30 +455,53 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                 </select>
               </div>
             </div>
-            <div>
-              <label style={{ fontSize: '12px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>
-                Note (Optional)
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. Paid via UPI"
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  borderRadius: '12px',
-                  border: '1px solid #CBD5E1',
-                  fontFamily: 'inherit',
-                  fontSize: '14px',
-                  marginTop: '6px',
-                  outline: 'none'
-                }}
-              />
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: '12px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>
+                  Date
+                </label>
+                <input
+                  type="text"
+                  placeholder="Today, Yesterday, 25 Aug"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    borderRadius: '12px',
+                    border: '1.5px solid #CBD5E1',
+                    fontFamily: 'inherit',
+                    fontSize: '14px',
+                    marginTop: '6px',
+                    outline: 'none'
+                  }}
+                />
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: '12px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>
+                  Note (Optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Paid via UPI"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    borderRadius: '12px',
+                    border: '1.5px solid #CBD5E1',
+                    fontFamily: 'inherit',
+                    fontSize: '14px',
+                    marginTop: '6px',
+                    outline: 'none'
+                  }}
+                />
+              </div>
             </div>
           </div>
           <button type="submit" className="action-pill-btn primary" style={{ width: '100%', padding: '16px' }}>
-            <span className="action-title" style={{ fontSize: '15px' }}>Save Expense</span>
+            <span className="action-title" style={{ fontSize: '15px' }}>Save Expense to Vault</span>
           </button>
         </form>
       );

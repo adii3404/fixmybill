@@ -11,9 +11,12 @@ export interface Transaction {
   category: ExpenseCategory;
   note?: string;
   hasAttachment?: boolean;
+  createdAt?: string;
+  attachmentName?: string;
+  attachmentPreview?: string;
 }
 
-export type ModalType = 'camera' | 'upload' | 'manual' | 'signin' | 'trial' | 'demo' | null;
+export type ModalType = 'camera' | 'upload' | 'manual' | null;
 
 export interface MonthlyStats {
   totalSpent: number;

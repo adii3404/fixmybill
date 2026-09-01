@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { FileText, Menu, X } from 'lucide-react';
+import { FileText, Menu, X, PlusCircle, Sparkles } from 'lucide-react';
+import { ModalType } from '../types';
 
 interface NavbarProps {
+  onOpenModal: (type: ModalType) => void;
   onShowToast: (msg: string) => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onShowToast }) => {
+export const Navbar: React.FC<NavbarProps> = ({ onOpenModal, onShowToast }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
@@ -21,25 +23,50 @@ export const Navbar: React.FC<NavbarProps> = ({ onShowToast }) => {
         <ul className="nav-links">
           <li><a href="#features">Features</a></li>
           <li><a href="#activity">Activity</a></li>
-          <li><a href="#pricing" onClick={(e) => { e.preventDefault(); onShowToast('FixMyBill is currently 100% free with unlimited bill storage!'); }}>Pricing</a></li>
-          <li><a href="#help" onClick={(e) => { e.preventDefault(); onShowToast('Help center & 24/7 WhatsApp assistant available'); }}>Help</a></li>
+          <li>
+            <a
+              href="#pricing"
+              onClick={(e) => {
+                e.preventDefault();
+                onShowToast('FixMyBill is 100% free with unlimited local storage & exports!');
+              }}
+            >
+              Pricing
+            </a>
+          </li>
+          <li>
+            <a
+              href="#help"
+              onClick={(e) => {
+                e.preventDefault();
+                onShowToast('Help & guides are available directly in your dashboard');
+              }}
+            >
+              Help
+            </a>
+          </li>
         </ul>
 
         <div className="nav-cta-group">
           <button
             className="btn-ghost"
-            id="nav-signin-btn"
-            onClick={() => onShowToast('Sign in modal opening...')}
+            id="nav-quick-camera-btn"
+            onClick={() => onOpenModal('camera')}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
           >
-            Sign in
+            <Sparkles size={16} color="#4F46E5" />
+            <span>Smart Scan</span>
           </button>
           <button
             className="btn-primary"
-            id="nav-get-started-btn"
-            onClick={() => onShowToast('Free trial started — no credit card needed!')}
+            id="nav-add-expense-btn"
+            onClick={() => onOpenModal('manual')}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
           >
-            Get Started
+            <PlusCircle size={16} />
+            <span>Add Expense</span>
           </button>
+
           <button
             className="mobile-menu-toggle"
             id="mobile-menu-btn"
@@ -52,14 +79,16 @@ export const Navbar: React.FC<NavbarProps> = ({ onShowToast }) => {
       </div>
 
       {mobileMenuOpen && (
-        <div style={{
-          background: 'white',
-          borderBottom: '1px solid var(--border-subtle)',
-          padding: '16px 24px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '12px'
-        }}>
+        <div
+          style={{
+            background: 'white',
+            borderBottom: '1px solid var(--border-subtle)',
+            padding: '16px 24px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px'
+          }}
+        >
           <a
             href="#features"
             style={{ textDecoration: 'none', color: '#0F172A', fontWeight: 600, padding: '8px 0' }}
@@ -77,7 +106,11 @@ export const Navbar: React.FC<NavbarProps> = ({ onShowToast }) => {
           <a
             href="#pricing"
             style={{ textDecoration: 'none', color: '#0F172A', fontWeight: 600, padding: '8px 0' }}
-            onClick={(e) => { e.preventDefault(); setMobileMenuOpen(false); onShowToast('FixMyBill is currently 100% free with unlimited bill storage!'); }}
+            onClick={(e) => {
+              e.preventDefault();
+              setMobileMenuOpen(false);
+              onShowToast('FixMyBill is 100% free with unlimited local storage & exports!');
+            }}
           >
             Pricing
           </a>
@@ -85,9 +118,22 @@ export const Navbar: React.FC<NavbarProps> = ({ onShowToast }) => {
             <button
               className="btn-primary"
               style={{ flex: 1 }}
-              onClick={() => { setMobileMenuOpen(false); onShowToast('Free trial started — no credit card needed!'); }}
+              onClick={() => {
+                setMobileMenuOpen(false);
+                onOpenModal('camera');
+              }}
             >
-              Get Started
+              Smart Scan Bill
+            </button>
+            <button
+              className="btn-ghost"
+              style={{ flex: 1, border: '1px solid #E2E8F0' }}
+              onClick={() => {
+                setMobileMenuOpen(false);
+                onOpenModal('manual');
+              }}
+            >
+              Add Manually
             </button>
           </div>
         </div>

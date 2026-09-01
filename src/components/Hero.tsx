@@ -1,5 +1,5 @@
 import React from 'react';
-import { Camera, Play, ShieldCheck, Check, UploadCloud, Edit3, Info } from 'lucide-react';
+import { Camera, Play, ShieldCheck, Check, UploadCloud, Edit3, Info, Sparkles } from 'lucide-react';
 import { ModalType } from '../types';
 
 interface HeroProps {
@@ -12,8 +12,8 @@ export const Hero: React.FC<HeroProps> = ({ onOpenModal, onShowToast }) => {
     <section className="hero-section" id="hero-section">
       <div className="hero-left">
         <div className="eyebrow" id="user-greeting-badge">
-          <Check size={12} strokeWidth={3} />
-          Good morning, Aditya
+          <Sparkles size={13} strokeWidth={2.5} color="#4F46E5" />
+          Smart Expense & Receipt Vault
         </div>
         <h1>Your bills and payments, <span>organized.</span></h1>
         <p className="lead">
@@ -32,7 +32,7 @@ export const Hero: React.FC<HeroProps> = ({ onOpenModal, onShowToast }) => {
           <button
             className="btn-large-ghost"
             id="hero-demo-btn"
-            onClick={() => onShowToast('▶ Product demo video preview launched')}
+            onClick={() => onShowToast('▶ Product demo: Point camera at any receipt or upload UPI screenshots to auto-categorize.')}
           >
             <Play size={16} fill="currentColor" />
             Watch Demo
@@ -42,15 +42,15 @@ export const Hero: React.FC<HeroProps> = ({ onOpenModal, onShowToast }) => {
         <div className="trust-strip">
           <div className="trust-item">
             <ShieldCheck size={15} strokeWidth={2.5} />
-            256-bit encrypted
+            100% Private & Local
           </div>
           <div className="trust-item">
             <Check size={14} strokeWidth={2.5} />
-            RBI Compliant
+            Instant OCR Matching
           </div>
           <div className="trust-item">
             <Check size={14} strokeWidth={2.5} />
-            Free forever plan
+            Free Forever
           </div>
         </div>
       </div>
@@ -61,7 +61,7 @@ export const Hero: React.FC<HeroProps> = ({ onOpenModal, onShowToast }) => {
           <div className="card-head">
             <div className="card-tag">
               <Check size={12} strokeWidth={3} />
-              Auto-Sync Active
+              Instant Vault Ready
             </div>
             <h2>Add a new expense</h2>
             <p>Upload a bill, payment screenshot, or add it manually.</p>
