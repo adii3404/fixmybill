@@ -127,6 +127,7 @@ export const App: React.FC = () => {
 
       <main>
         <Hero
+          transactions={transactions}
           onOpenModal={(type) => {
             setSelectedTransaction(null);
             setActiveModal(type);

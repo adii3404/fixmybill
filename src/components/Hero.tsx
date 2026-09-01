@@ -1,13 +1,29 @@
 import React from 'react';
-import { Camera, Play, ShieldCheck, Check, UploadCloud, Edit3, Info, Sparkles } from 'lucide-react';
-import { ModalType } from '../types';
+import { Camera, Play, UploadCloud, Edit3, Info, Sparkles, FileSpreadsheet } from 'lucide-react';
+import { ModalType, Transaction } from '../types';
+import { exportTransactionsToExcel } from '../utils/exportReport';
 
 interface HeroProps {
+  transactions: Transaction[];
   onOpenModal: (type: ModalType) => void;
   onShowToast: (msg: string) => void;
 }
 
-export const Hero: React.FC<HeroProps> = ({ onOpenModal, onShowToast }) => {
+export const Hero: React.FC<HeroProps> = ({ transactions, onOpenModal, onShowToast }) => {
+  const handleGenerateReport = () => {
+    try {
+      if (!transactions || transactions.length === 0) {
+        onShowToast('No transactions found to generate report.');
+        return;
+      }
+      exportTransactionsToExcel(transactions);
+      onShowToast('Downloading Excel report with all transactions!');
+    } catch (err: any) {
+      console.error(err);
+      onShowToast(err.message || 'Failed to export report');
+    }
+  };
+
   return (
     <section className="hero-section" id="hero-section">
       <div className="hero-left">
@@ -29,29 +45,33 @@ export const Hero: React.FC<HeroProps> = ({ onOpenModal, onShowToast }) => {
             <Camera size={18} strokeWidth={2.3} />
             Scan Your First Bill
           </button>
-          <button
+          <a
+            href="https://youtu.be/AJwvhby-lB4?si=pSNKLnkAT7k796tR"
+            target="_blank"
+            rel="noopener noreferrer"
             className="btn-large-ghost"
             id="hero-demo-btn"
-            onClick={() => onShowToast('▶ Product demo: Point camera at any receipt or upload UPI screenshots to auto-categorize.')}
+            style={{ textDecoration: 'none' }}
           >
             <Play size={16} fill="currentColor" />
             Watch Demo
-          </button>
+          </a>
         </div>
 
-        <div className="trust-strip">
-          <div className="trust-item">
-            <ShieldCheck size={15} strokeWidth={2.5} />
-            100% Private & Local
-          </div>
-          <div className="trust-item">
-            <Check size={14} strokeWidth={2.5} />
-            Instant OCR Matching
-          </div>
-          <div className="trust-item">
-            <Check size={14} strokeWidth={2.5} />
-            Free Forever
-          </div>
+        <div style={{ marginTop: '-12px', marginBottom: '8px' }}>
+          <button
+            className="btn-large-primary"
+            id="hero-generate-report-btn"
+            onClick={handleGenerateReport}
+            style={{
+              background: 'linear-gradient(135deg, #059669, #047857)',
+              boxShadow: '0 8px 20px rgba(5, 150, 105, 0.3)',
+              cursor: 'pointer'
+            }}
+          >
+            <FileSpreadsheet size={18} strokeWidth={2.3} />
+            Generate a Report
+          </button>
         </div>
       </div>
 
@@ -60,7 +80,7 @@ export const Hero: React.FC<HeroProps> = ({ onOpenModal, onShowToast }) => {
         <div className="hero-upload-card" id="hero-upload-container">
           <div className="card-head">
             <div className="card-tag">
-              <Check size={12} strokeWidth={3} />
+              <Sparkles size={12} strokeWidth={3} />
               Instant Vault Ready
             </div>
             <h2>Add a new expense</h2>
